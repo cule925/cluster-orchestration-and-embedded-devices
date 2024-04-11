@@ -40,6 +40,13 @@ read DEV_FILE
 # Unmount all of its partitions
 sudo umount $DEV_FILE*
 
+echo "Pushing image..."
+
 # Push image file to SD card
 sudo dd if=$RPI_OS_IMG of=$DEV_FILE bs=4M conv=fsync status=progress
+
+echo "Ejecting device..."
+
+# Ejecting device safely
+sudo eject $DEV_FILE
 

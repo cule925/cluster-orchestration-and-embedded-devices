@@ -64,4 +64,61 @@ Korijen projekta sadrži *Makefile* datoteku gdje je uz pomoć ```make``` alata 
 
 ## Primjer projekta
 
+Uzmimo tri Raspberry Pi mikroračunala: dva Raspberry Pi Model 4B mikroračunala (2 GB i 8 GB inačice) i jedan Raspberry Pi 3 Model B i instalirajmo Raspberry Pi OS Lite na sva tri mikroračunala. Za svaki Raspberry Pi potrebno je na njegovu odgovarajuću SD karticu zapisati sliku Raspberry Pi OS Lite operacijskog sustava. Dakle potrebno je uzeti čitač mikro SD kartice, ubaciti mikro SD karticu u čitač i spojiti čitač na računalo i u terminalu izvršiti naredbu (**oprez kod odabira datoteke uređaja**):
+```
+make push-img
+```
+Za inicijalno postavljanje Raspberry Pi OS Lite operacijskog sustava bit će potrebna jedna USB tipkovnica i jedan monitor koji ima potporu za HDMI. Nakon pisanja slike na sve tri kartice za svaki Raspberry Pi i ubacivanje istih kartica u utore istih potrebno je konfigurirati raspored tipkovnice (hrvatski ili engleski), korisničko ime, zaporku, ime mikroračunala, po mogućnosti spojiti se na bežičnu mrežu, ažurirati repozitorije i sustav te omogućiti SSH servis. Za ovaj primjer je preporučeno koristiti korisničko ime ```user``` i zaporku ```password```, a ime mikroračunala neka bude za Raspberry Pi 3 Model B 'control-node', za prvi Raspberry Pi Model 4B 'worker-node-1', a za drugi Raspberry Pi Model 4B 'worker-node-2'. Dakle, nakon namještanja rasporeda tipkovnice, korisničkog imena i zaporke potrebno je ulogirati se i izvršiti niz naredbi:
+```
+sudo systemctl enable NetworkManager					# Omogući rad mrežnih servisa
+sudo systemctl start NetworkManager					# Započni rad mrežnih servisa
+sudo systemctl enable ssh						# Omogući rad SSH servisa
+sudo systemctl start ssh						# Započni rad SSH servisa
+nmcli dev wifi list							# Izlistaj dostupne mreže
+nmcli dev wifi connect [ime mreže] password [zaporka mreže]		# Spoji se na jednu od dostupnih mreža
+sudo apt update								# Ažuriraj popis paketa
+sudo apt full-upgrade -y						# Ažuriraj sve pakete
+sudo raspi-config							# Namjesti postavke Raspberry Pi-a (1->S4, 5->L1, 5->L2, 5->L3)
+sudo dpkg-reconfigure console-setup					# Promjena fonta tipkovnice
+sudo reboot								# Ponovno pokreni Raspberry Pi
+```
+Nakon ponovnog pokretanja potrebno je ulogirati se i provjeriti rade li servisi za SSH povezanost i upravljanje mrežom (```systemctl status [ime servisa]```).
+
+### Spajanje s radnog računala na mikroračunala pomoću SSH protokola
+
+Na radnom računalu korišten je Arch Linux operacijski sustav. Preduvjet je da su sva Raspberry Pi mikroračunala i računalo s Arch Linux operacijskim sustavom spojeno na istu lokalnu mrežu. Za početak je potrebno generirati jedan par kriptografskih asimetričnih ključeva u terminalu naredbom:
+```
+ssh-keygen -t ed25519
+```
+Zatim je potrebno otvoriti još tri terminala namijenjena za svaki Raspberry Pi i prenijeti prethodno generirani javni ključ na Raspberry Pi mikroračunala:
+```
+ssh-copy-id user@[IP adresa Raspberry Pi-a]
+```
+Tek onda je moguće ulogirati se na svaki Raspberry Pi naredbom:
+```
+ssh user@[IP adresa Raspberry Pi-a]
+```
+
+### Instalacija K3s Kubernetes distribucije
+
+Potrebno je u ```/etc/hosts``` datotekama na svim Raspberry Pi mikroračunalima zapisati IP adrese i njihova imena kako bi se mogli međusobno adresirati po imenima umjesto IP adresama (ne dodajemo ime vlastitog čvora čiju datoteku uređujemo). Dakle, potrebno je urediti datoteku ```/etc/hosts``` na svim troma mikroračunalima:
+```
+echo -e "[IP adresa drugog čvora]\t[ime drugog čvora]" | sudo tee -a /etc/hosts
+echo -e "[IP adresa trećeg čvora]\t[ime trećeg čvora]" | sudo tee -a /etc/hosts
+```
+
+Također, potrebno je urediti datoteku ```/boot/firmware/cmdline.txt``` na svim mikroračunalima kako bi K3s distribucija mogla koristiti kontrolne grupe (*eng. cgroups*) i nakon toga ponovno pokrenuti sva mikroračunala. Na kraj datoteke dodaje se ```cgroup_memory=1 cgroup_enable=memory``` (potrebne su *sudo* ovlasti), dakle:
+```
+sudo nano /boot/firmware/cmdline.txt
+sudo reboot
+```
+U terminalu gdje smo ulogirani na *control-node* (Raspberry Pi Model 3B) potrebno je instalirati Kubernetes upravljački sloj koristeći [K3s distribuciju v1.29.3+k3s1](https://github.com/k3s-io/k3s/releases/tag/v1.29.3%2Bk3s1):
+```
+curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.29.3+k3s1 sh -
+```
+Potrebno je provjeriti jeli K3s servis aktivan naredbom ```systemctl status k3s```. Za instalaciju Kubernetes radnih čvorova i istovremeno pridruživanje tih čvorova u grozd *control-node* mikroračunala, potrebno je prvo ispisati token za pridruživanje *control-node*-a naredbom ```sudo cat /var/lib/rancher/k3s/server/node-token``` te taj ispis iskoristiti u naredbi instalacije i pridruživanja koje se izvršavaju na *worker-node-1* (Raspberry Pi Model 4B 8G) i *worker-node-2* (Raspberry Pi Model 4B 2G) mikroračunalima (također je potrebno navesti verziju K3s distribucije):
+```
+curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.29.3+k3s1 K3S_URL=https://control-node:6443 K3S_TOKEN=[token] sh -
+```
+Stanje K3s agent servisa može se vidjeti naredbom ```systemctl status k3s-agent```.
 

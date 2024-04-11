@@ -1,7 +1,7 @@
 .PHONY: start-layers test-layers kill-layers push-img build-docker-client-img
 
 TEST_PROJ_DIR := application/layer-control/
-RPI_OS_DIR := kubernetes/
+RPI_OS_DIR := raspberry-pi-and-kubernetes/
 DOCKER_BUILD_DIR := application/
 
 # Start layers on localhost

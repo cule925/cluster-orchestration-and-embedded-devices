@@ -39,18 +39,9 @@ sudo apt update
 sudo apt full-upgrade
 sudo raspi-config
 ```
-
-#### Ažuriranje firmware-a
-
-Ažuriranje firmware-a obavlja se naredbama:
+Promjena fonta konzole:
 ```
-sudo rpi-update
-sudo reboot
-```
-U slučaju da stvari nakon ažuriranja firmware-a ne rade kako trebaju, ako je sustav funkcionalan (moguće je pokrenuti Raspberry Pi OS Lite), moguće je vratiti firmware na prethodno stabilno stanje naredbama:
-```
-sudo apt-get update
-sudo apt install --reinstall raspi-firmware
+sudo dpkg-reconfigure console-setup
 ```
 
 #### SSH povezanost
@@ -68,9 +59,9 @@ sudo apt install openssh
 ```
 Raspberry Pi mikroračunalo će u ovom slučaju biti SSH poslužitelj, dakle na računalu koje će biti SSH klijent je također potrebno instalirati OpenSSH. Nakon instalacije paketa, potrebno je na Raspberry Pi-u provjeriti jeli omogućen i pokrenut *sshd* servis i ako nije omogućiti ga i pokrenuti:
 ```
-sudo systemctl status sshd
-sudo systemctl enable sshd
-sudo systemctl start sshd
+sudo systemctl status ssh
+sudo systemctl enable ssh
+sudo systemctl start ssh
 ```
 Generiranje primjerice ED25519 par ključa na SSH klijentu radi se naredbom:
 ```
@@ -144,7 +135,7 @@ Upravljački sloj čini jedno ili više računala koja upravljaju radom grozda. 
 
 #### Prije instalacije na Raspberry Pi OS
 
-Standardne Raspberry Pi OS instalacije nemaju omogućenu značajku *cgroups*. [Prije instalacije K3s distribucije](https://docs.k3s.io/installation/requirements?os=pi), u datoteku ```/boot/cmdline.txt``` je potrebno dodati u prvom redu značajke ```cgroup_memory=1 cgroup_enable=memory```. Općenito, minimalne zahtjevi za K3s distribuciju su:
+Standardne Raspberry Pi OS instalacije nemaju omogućenu značajku *cgroups*. [Prije instalacije K3s distribucije](https://docs.k3s.io/installation/requirements?os=pi), u datoteku ```/boot/cmdline.txt``` ili ```/boot/firmware/cmdline.txt``` u novijim verzijama je potrebno dodati u prvom redu značajke ```cgroup_memory=1 cgroup_enable=memory```. Općenito, minimalne zahtjevi za K3s distribuciju su:
 
 * procesor s jednom jezgrom
 
