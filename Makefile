@@ -1,4 +1,4 @@
-.PHONY: start-layers test-layers kill-layers push-img build-docker-client-img
+.PHONY: start-layers test-layers kill-layers push-img build-docker-client-server-img
 
 TEST_PROJ_DIR := application/layer-control/
 RPI_OS_DIR := raspberry-pi-and-kubernetes/
@@ -21,6 +21,6 @@ push-img:
 	$(MAKE) -C $(RPI_OS_DIR) push-img
 
 # Build Docker image
-build-docker-client-img:
-	$(MAKE) -C $(DOCKER_BUILD_DIR) build-docker-client-img
+build-docker-client-server-img:
+	$(MAKE) -C $(DOCKER_BUILD_DIR) build-docker-client-server-img
 

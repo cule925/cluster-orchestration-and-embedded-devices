@@ -15,7 +15,7 @@ Za korištenje Docker naredbi potrebno je omogućiti i pokrenuti *dockerd* servi
 sudo systemctl enable docker
 sudo systemctl start docker
 ```
-Stanje servisa može se vidjeti naredbom ```systemctl status docker```. Potrebno je naglasiti da će se Docker slika pokretati na Raspberry Pi mikroračunalu što znači da sliku treba izgraditi za ARM64 arhitekturu na računalu x86_64 arhitekture, za tu svrhu se koristi plugin *buildx*. Radno okruženje IntelliJ može se pokrenuti naredbom ```idea```.
+Stanje servisa može se vidjeti naredbom ```systemctl status docker```. Potrebno je naglasiti da će se Docker slika pokretati na Raspberry Pi mikroračunalu što znači da sliku treba izgraditi za ARM64 arhitekturu na računalu x86_64 arhitekture, za tu svrhu se koristi plugin *buildx*. Radno okruženje IntelliJ može se pokrenuti naredbom ```idea```. Ukoliko se žele vršit naredbe bez 'root' privilegija, trenutnog korisnika je potrebno dodati u grupu *docker* naredbom ```sudo usermod -aG docker $USER```, odjaviti se sa sustava, ponovno se prijaviti i onda ponovno pokrenuti Docker servis naredbom ```sudo systemctl restart docker```.
 
 ## Koncept projekta
 
@@ -64,11 +64,11 @@ Korijen projekta sadrži *Makefile* datoteku gdje je uz pomoć ```make``` alata 
 
 ## Primjer projekta
 
-Uzmimo tri Raspberry Pi mikroračunala: dva Raspberry Pi Model 4B mikroračunala (2 GB i 8 GB inačice) i jedan Raspberry Pi 3 Model B i instalirajmo Raspberry Pi OS Lite na sva tri mikroračunala. Za svaki Raspberry Pi potrebno je na njegovu odgovarajuću SD karticu zapisati sliku Raspberry Pi OS Lite operacijskog sustava. Dakle potrebno je uzeti čitač mikro SD kartice, ubaciti mikro SD karticu u čitač i spojiti čitač na računalo i u terminalu izvršiti naredbu (**oprez kod odabira datoteke uređaja**):
+Uzmimo tri Raspberry Pi mikroračunala: dva Raspberry Pi 4 Model B mikroračunala (2 GB i 8 GB inačice) i jedan Raspberry Pi 3 Model B i instalirajmo Raspberry Pi OS Lite na sva tri mikroračunala. Za svaki Raspberry Pi potrebno je na njegovu odgovarajuću SD karticu zapisati sliku Raspberry Pi OS Lite operacijskog sustava. Dakle potrebno je uzeti čitač mikro SD kartice, ubaciti mikro SD karticu u čitač i spojiti čitač na računalo i u terminalu izvršiti naredbu (**oprez kod odabira datoteke uređaja**):
 ```
 make push-img
 ```
-Za inicijalno postavljanje Raspberry Pi OS Lite operacijskog sustava bit će potrebna jedna USB tipkovnica i jedan monitor koji ima potporu za HDMI. Nakon pisanja slike na sve tri kartice za svaki Raspberry Pi i ubacivanje istih kartica u utore istih potrebno je konfigurirati raspored tipkovnice (hrvatski ili engleski), korisničko ime, zaporku, ime mikroračunala, po mogućnosti spojiti se na bežičnu mrežu, ažurirati repozitorije i sustav te omogućiti SSH servis. Za ovaj primjer je preporučeno koristiti korisničko ime ```user``` i zaporku ```password```, a ime mikroračunala neka bude za Raspberry Pi 3 Model B 'control-node', za prvi Raspberry Pi Model 4B 'worker-node-1', a za drugi Raspberry Pi Model 4B 'worker-node-2'. Dakle, nakon namještanja rasporeda tipkovnice, korisničkog imena i zaporke potrebno je ulogirati se i izvršiti niz naredbi:
+Za inicijalno postavljanje Raspberry Pi OS Lite operacijskog sustava bit će potrebna jedna USB tipkovnica i jedan monitor koji ima potporu za HDMI. Nakon pisanja slike na sve tri kartice za svaki Raspberry Pi i ubacivanje istih kartica u utore istih potrebno je konfigurirati raspored tipkovnice (hrvatski ili engleski), korisničko ime, zaporku, ime mikroračunala, po mogućnosti spojiti se na bežičnu mrežu, ažurirati repozitorije i sustav te omogućiti SSH servis. Za ovaj primjer je preporučeno koristiti korisničko ime ```user``` i zaporku ```password```, a ime mikroračunala za Raspberry Pi Model 4B (inačica 2 GB) neka bude  'control-node', za Raspberry Pi Model 4B (inačica 8 GB) 'worker-node-1', a za Raspberry Pi Model 3 'worker-node-2'. Dakle, nakon namještanja rasporeda tipkovnice, korisničkog imena i zaporke potrebno je ulogirati se i izvršiti niz naredbi:
 ```
 sudo systemctl enable NetworkManager					# Omogući rad mrežnih servisa
 sudo systemctl start NetworkManager					# Započni rad mrežnih servisa
@@ -112,13 +112,77 @@ Također, potrebno je urediti datoteku ```/boot/firmware/cmdline.txt``` na svim 
 sudo nano /boot/firmware/cmdline.txt
 sudo reboot
 ```
-U terminalu gdje smo ulogirani na *control-node* (Raspberry Pi Model 3B) potrebno je instalirati Kubernetes upravljački sloj koristeći [K3s distribuciju v1.29.3+k3s1](https://github.com/k3s-io/k3s/releases/tag/v1.29.3%2Bk3s1):
+U terminalu gdje smo ulogirani na *control-node* (Raspberry Pi 4 Model B inačica 2 GB) potrebno je instalirati Kubernetes upravljački sloj koristeći [K3s distribuciju v1.29.3+k3s1](https://github.com/k3s-io/k3s/releases/tag/v1.29.3%2Bk3s1):
 ```
 curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.29.3+k3s1 sh -
 ```
-Potrebno je provjeriti jeli K3s servis aktivan naredbom ```systemctl status k3s```. Za instalaciju Kubernetes radnih čvorova i istovremeno pridruživanje tih čvorova u grozd *control-node* mikroračunala, potrebno je prvo ispisati token za pridruživanje *control-node*-a naredbom ```sudo cat /var/lib/rancher/k3s/server/node-token``` te taj ispis iskoristiti u naredbi instalacije i pridruživanja koje se izvršavaju na *worker-node-1* (Raspberry Pi Model 4B 8G) i *worker-node-2* (Raspberry Pi Model 4B 2G) mikroračunalima (također je potrebno navesti verziju K3s distribucije):
+Potrebno je provjeriti jeli K3s servis aktivan naredbom ```systemctl status k3s```. Za instalaciju Kubernetes radnih čvorova i istovremeno pridruživanje tih čvorova u grozd *control-node* mikroračunala, potrebno je prvo ispisati token za pridruživanje *control-node*-a naredbom ```sudo cat /var/lib/rancher/k3s/server/node-token``` te taj ispis iskoristiti u naredbi instalacije i pridruživanja koje se izvršavaju na *worker-node-1* (Raspberry Pi 4 Model B inačica 8G) i *worker-node-2* (Raspberry Pi 3 Model B) mikroračunalima (također je potrebno navesti verziju K3s distribucije):
 ```
 curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.29.3+k3s1 K3S_URL=https://control-node:6443 K3S_TOKEN=[token] sh -
 ```
 Stanje K3s agent servisa može se vidjeti naredbom ```systemctl status k3s-agent```.
 
+### Postavljanje konfiguracije Kubernetes grozda
+
+U ovom slučaju želi se stvoriti po jedna instanca *client-server* kontejnera po svakom čvoru. Za početak, potrebno je napraviti konfiguraciju grozda u YAML formatu (na lokalnom računalu), kopirati je na *control-node* u korisnički direktorij naredbom ```scp [konfiguracijska YAML datoteka] user@[IP adresa upravljačkog čvora]:~/``` i primijeniti tu konfiguraciju na upravljačkom čvoru naredbom ```k3s kubectl apply -f [konfiguracijska YAML datoteka]```. Konfiguracijska datoteka izgleda ovako:
+
+```
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: my-daemonset
+  labels:
+    app: my-daemonset
+spec:
+  selector:
+    matchLabels:
+      app: my-daemonset
+  template:
+    metadata:
+      labels:
+        app: my-daemonset
+    spec:
+      containers:
+      - name: my-container
+        image: [ime udaljene Docker slike]
+        ports:
+        - containerPort: [port nad kojim kontejner prisluškuje]
+        env:
+        - name: SERVER_IP
+          value: "[IP adresa računala koji pokreće server.jar]"
+        - name: SERVER_PORT
+          value: "[port računala koji pokreće server.jar]"
+---
+apiVersion: apps/v1
+kind: Service
+metadata:
+  name: my-nodeport-service
+spec:
+  selector:
+    app: my-daemonset
+  ports:
+  - port: [port nad kojim kontejner prisluškuje]
+    targetPort: [port nad kojim će servis prisluškivati unutar grozda]
+    nodePort: [port nad kojim će čvor prisluškivati]
+  type: NodePort
+  externalTrafficPolicy: Local
+```
+
+Oznaka ```---``` razdvaja YAML datoteku na dva dijela (kao da su pisane dvije datoteke). Konkretni primjeri nalaze se u direktoriju ```kubernetes-yaml-example/```. Značenje termina:
+- [*apiVersion*](https://kubernetes.io/docs/reference/using-api/api-concepts/)
+	- ova oznaka predstavlja verziju API-ja koji se koristi u komunikaciji s HTTP poslužiteljem
+	- alat *kubectl* komunicira s Kubernetes upravljačkim slojem preko HTTP API poslužitelja
+- [*kind*](https://kubernetes.io/docs/reference/using-api/api-concepts/)
+	- vrsta objekta nad kojim će se izvršiti operacija (stvaranje, brisanje, modificiranje...)
+- [*metadata*](https://kubernetes.io/docs/concepts/overview/working-with-objects/)
+	- metapodatci, opis objekta nad kojim će se izvršiti operacija
+	- definira ime objekta, [oznaku](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/) i slično
+- [*spec*](https://kubernetes.io/docs/concepts/overview/working-with-objects/)
+	- definira stanje objekta
+	- [*selector*](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/) oznaka govori nad kojim objektima će se primijeniti trenutni objekt (npr. nad kojim skupom kontejnera želimo da se primjeni servis)
+	- oznaka *template* kod *DaemonSet* objekta opisuje Kubernetes kontejner koji pripada u definiranoj grupi navedenog objekta, navode se razne specifikacije: koja Docker slika se koristi, koje portove je potrebno proslijediti, koje su mu vrijednosti varijabli okoline itd.
+	- *ports* oznaka kod *Service* objekta daje informaciju o povezivanju portova s vanjskom mrežom i unutarnjom (unutar grozda)
+	- *type: NodePort* oznaka kod *Service* objekta govori da je ovo *NodePort* servis, svaki čvor će imati otvoren port preko kojeg će vanjski svijet moći komunicirati s Kubernetes kontejnerima
+	- *externalTrafficPolicy: Local* oznaka kod *Service* objekta govori da se sav promet namijenjen čvoru rutira samo Kubernetes kontejnerima unutar tog čvora
+
+Datoteku je potrebno prenijeti na upravljački čvor naredbom ```scp``` i nakon toga proslijediti konfiguraciju naredbom ```k3s kubectl apply -f [ime datoteke]```. Konfiguracija se može povući naredbom ```k3s kubectl delete -f [ime datoteke]```.

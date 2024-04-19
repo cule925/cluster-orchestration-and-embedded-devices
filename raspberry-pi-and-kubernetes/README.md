@@ -149,7 +149,7 @@ curl -sfL https://get.k3s.io | sh -
 ```
 Naredba će preuzeti binarnu datoteku koja sadrži upravljački sloj i radni čvor. Rad grozda započinje odmah nakon instalacije. Deinstalacija *k3s-server* komponente može se učiniti pokretanjem skripte:
 ```
-/usr/local/bin/k3s-uninstall.sh
+sudo /usr/local/bin/k3s-uninstall.sh
 ```
 Također, naredba će stvoriti Kubernetes konfiguracijsku datoteku ```/etc/rancher/k3s/k3s.yaml``` koju će odmah početi koristiti.
 
@@ -161,6 +161,6 @@ curl -sfL https://get.k3s.io | K3S_URL=https://[IP adresa k3s-server komponente]
 ```
 Token je potrebno kopirati s *k3s-server* komponente iz datoteke ```/var/lib/rancher/k3s/server/node-token```. Radni čvor će se pridružiti grozdu upravljačkog sloja. Preporučeno je koristiti adresiranje preko imena umjesto IP adrese (potrebno je urediti datoteku ```/etc/hosts```). Deinstalacija *k3s-agent* komponente može se učiniti pokretanjem skripte:
 ```
-/usr/local/bin/k3s-uninstall.sh
+sudo /usr/local/bin/k3s-agent-uninstall.sh
 ```
 

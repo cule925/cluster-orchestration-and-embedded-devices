@@ -119,7 +119,7 @@ if [[ $COMMAND == "start-layers" ]]; then
 	if [[ -n $PORT ]]; then
 		SERVER_PORT=$PORT
 	else
-		SERVER_PORT=$DEFAULT_IP_ADDRESS_OF_SERVER
+		SERVER_PORT=$DEFAULT_SERVER_PORT
 	fi
 	echo "server port is: $SERVER_PORT"
 	

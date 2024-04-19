@@ -1,6 +1,6 @@
-.PHONY: build-docker-client-img
+.PHONY: build-docker-client-server-img
 
 # Build Docker image
-build-docker-client-img:
-	sudo ./build-docker-client-img.sh
+build-docker-client-server-img:
+	./build-docker-client-server-img.sh
 

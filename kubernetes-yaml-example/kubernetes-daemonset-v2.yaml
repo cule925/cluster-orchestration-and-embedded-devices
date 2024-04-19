@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: my-daemonset
+  labels:
+    app: my-daemonset
+spec:
+  selector:
+    matchLabels:
+      app: my-daemonset
+  template:
+    metadata:
+      labels:
+        app: my-daemonset
+    spec:
+      containers:
+      - name: my-container
+        image: cule925/client-server-arm64:v2
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SERVER_IP
+          value: "192.168.7.80"
+        - name: SERVER_PORT
+          value: "8080"
