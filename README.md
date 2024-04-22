@@ -68,7 +68,7 @@ Uzmimo tri Raspberry Pi mikroračunala: dva Raspberry Pi 4 Model B mikroračunal
 ```
 make push-img
 ```
-Za inicijalno postavljanje Raspberry Pi OS Lite operacijskog sustava bit će potrebna jedna USB tipkovnica i jedan monitor koji ima potporu za HDMI. Nakon pisanja slike na sve tri kartice za svaki Raspberry Pi i ubacivanje istih kartica u utore istih potrebno je konfigurirati raspored tipkovnice (hrvatski ili engleski), korisničko ime, zaporku, ime mikroračunala, po mogućnosti spojiti se na bežičnu mrežu, ažurirati repozitorije i sustav te omogućiti SSH servis. Za ovaj primjer je preporučeno koristiti korisničko ime ```user``` i zaporku ```password```, a ime mikroračunala za Raspberry Pi Model 4B (inačica 2 GB) neka bude  'control-node', za Raspberry Pi Model 4B (inačica 8 GB) 'worker-node-1', a za Raspberry Pi Model 3 'worker-node-2'. Dakle, nakon namještanja rasporeda tipkovnice, korisničkog imena i zaporke potrebno je ulogirati se i izvršiti niz naredbi:
+Za inicijalno postavljanje Raspberry Pi OS Lite operacijskog sustava bit će potrebna jedna USB tipkovnica i jedan monitor koji ima potporu za HDMI. Nakon pisanja slike na sve tri kartice za svaki Raspberry Pi i ubacivanje istih kartica u utore istih potrebno je konfigurirati raspored tipkovnice (hrvatski ili engleski), korisničko ime, zaporku, ime mikroračunala, po mogućnosti spojiti se na bežičnu mrežu, ažurirati repozitorije i sustav te omogućiti SSH servis. Za ovaj primjer je preporučeno koristiti korisničko ime ```user``` i zaporku ```password```, a ime mikroračunala za Raspberry Pi Model 4B (inačica 8 GB) neka bude  'control-node', za Raspberry Pi Model 4B (inačica 2 GB) 'worker-node-1', a za Raspberry Pi 3 Model B 'worker-node-2'. Dakle, nakon namještanja rasporeda tipkovnice, korisničkog imena i zaporke potrebno je ulogirati se i izvršiti niz naredbi:
 ```
 sudo systemctl enable NetworkManager					# Omogući rad mrežnih servisa
 sudo systemctl start NetworkManager					# Započni rad mrežnih servisa
@@ -112,11 +112,11 @@ Također, potrebno je urediti datoteku ```/boot/firmware/cmdline.txt``` na svim 
 sudo nano /boot/firmware/cmdline.txt
 sudo reboot
 ```
-U terminalu gdje smo ulogirani na *control-node* (Raspberry Pi 4 Model B inačica 2 GB) potrebno je instalirati Kubernetes upravljački sloj koristeći [K3s distribuciju v1.29.3+k3s1](https://github.com/k3s-io/k3s/releases/tag/v1.29.3%2Bk3s1):
+U terminalu gdje smo ulogirani na *control-node* (Raspberry Pi 4 Model B inačica 8 GB) potrebno je instalirati Kubernetes upravljački sloj koristeći [K3s distribuciju v1.29.3+k3s1](https://github.com/k3s-io/k3s/releases/tag/v1.29.3%2Bk3s1):
 ```
 curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.29.3+k3s1 sh -
 ```
-Potrebno je provjeriti jeli K3s servis aktivan naredbom ```systemctl status k3s```. Za instalaciju Kubernetes radnih čvorova i istovremeno pridruživanje tih čvorova u grozd *control-node* mikroračunala, potrebno je prvo ispisati token za pridruživanje *control-node*-a naredbom ```sudo cat /var/lib/rancher/k3s/server/node-token``` te taj ispis iskoristiti u naredbi instalacije i pridruživanja koje se izvršavaju na *worker-node-1* (Raspberry Pi 4 Model B inačica 8G) i *worker-node-2* (Raspberry Pi 3 Model B) mikroračunalima (također je potrebno navesti verziju K3s distribucije):
+Potrebno je provjeriti jeli K3s servis aktivan naredbom ```systemctl status k3s```. Za instalaciju Kubernetes radnih čvorova i istovremeno pridruživanje tih čvorova u grozd *control-node* mikroračunala, potrebno je prvo ispisati token za pridruživanje *control-node*-a naredbom ```sudo cat /var/lib/rancher/k3s/server/node-token``` te taj ispis iskoristiti u naredbi instalacije i pridruživanja koje se izvršavaju na *worker-node-1* (Raspberry Pi 4 Model B inačica 2G) i *worker-node-2* (Raspberry Pi 3 Model B) mikroračunalima (također je potrebno navesti verziju K3s distribucije):
 ```
 curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.29.3+k3s1 K3S_URL=https://control-node:6443 K3S_TOKEN=[token] sh -
 ```
@@ -186,3 +186,111 @@ Oznaka ```---``` razdvaja YAML datoteku na dva dijela (kao da su pisane dvije da
 	- *externalTrafficPolicy: Local* oznaka kod *Service* objekta govori da se sav promet namijenjen čvoru rutira samo Kubernetes kontejnerima unutar tog čvora
 
 Datoteku je potrebno prenijeti na upravljački čvor naredbom ```scp``` i nakon toga proslijediti konfiguraciju naredbom ```k3s kubectl apply -f [ime datoteke]```. Konfiguracija se može povući naredbom ```k3s kubectl delete -f [ime datoteke]```.
+
+### Instalacija Kubernetes dashboard komponente kao zamjena za alat kubectl
+
+U slučaju da se želi koristiti web grafičko sučelje [Kubernetes Dashboard](https://github.com/kubernetes/dashboard) potrebno je prvo na upravljačkom sloju (*control-node*) instalirati Git i [Helm](https://helm.sh/docs/intro/install/) upravitelj paketa naredbom:
+
+```
+sudo apt install git
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+```
+
+Zatim je potrebno postaviti [*Deployment*](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/) za grafičko sučelje uz pomoć alata *kubectl* na upravljačkom sloju. Ovo će preuzeti Docker kontejnere potrebne za rad grafičkog web sučelja te pokrenuti Kubernetes kontejnere i servise na upravljačkom sloju. Kako koristimo K3s umjesto K8s (izvorna Kubernetes distribucija), potrebno je navesti gdje se nalazi konfiguracijska datoteka koja omogućuje pristup Kubernetes grozda. U slučaju K3s distribucije, njezina [konfiguracijska datoteka](https://docs.k3s.io/cluster-access) se nalazi na lokaciji ```/etc/rancher/k3s/k3s.yaml```. Dakle, potrebno je izvesti naredbe:
+
+```
+helm --kubeconfig /etc/rancher/k3s/k3s.yaml repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
+sudo helm --kubeconfig /etc/rancher/k3s/k3s.yaml upgrade --install kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard --create-namespace --namespace kubernetes-dashboard
+```
+
+Kubernetes kontejneri i servisi koji predstavljaju web sučelje su stvoreni u vlastitom imenskom prostoru *kubernetes-dashboard* što znači da se *kubectl* operacije nad njima neće moći primijeniti bez dodavanje argumenta ```-n kubernetes-dashboard```. Sada je potrebno omogućiti pristup web sučelju. Postoje dva načina kako to napraviti. Jedan je izvršavanjem naredbe ```sudo kubectl -n kubernetes-dashboard port-forward --address 0.0.0.0 svc/kubernetes-dashboard-kong-proxy 8443:443``` koja će direktno napraviti  prosljeđivanje porta sa servisa u vanjski svijet. Ova naredba zahtijeva ponovno izvršavanje pri svakom pokretanju računala pa nije baš praktična. Drugi način je urediti sam servis *kubernetes-dashboard-kong-proxy* gdje će ga se pretvoriti u *NodePort* servis umjesto *ClusterIP*. To se može napraviti izravnim uređivanjem servisa naredbom ```sudo kubectl -n kubernetes-dashboard edit service kubernetes-dashboard-kong-proxy```. Ljepši način je da samu trenutnu konfiguraciju ispišemo u datoteku, uredimo je i proslijedimo (```kubectl apply -f ...```). Ispis trenutne konfiguracije servisa u YAML obliku u datoteku ```kubernetes-dashboard-kong-proxy.yaml``` radi se naredbom:
+
+```
+sudo kubectl get service kubernetes-dashboard-kong-proxy -n kubernetes-dashboard -o yaml > kubernetes-dashboard-kong-proxy.yaml
+```
+
+Potrebno je servis pretvoriti u tip *NodePort* umjesto *ClusterIP* (pomoću npr. ```nano kubernetes-dashboard-kong-proxy.yaml```):
+
+```
+  ...
+  selector:
+    app.kubernetes.io/component: app
+    app.kubernetes.io/instance: kubernetes-dashboard
+    app.kubernetes.io/name: kong
+  sessionAffinity: None
+  type: NodePort # Promjenjena stavka
+status:
+  loadBalancer: {}
+```
+
+Također bi bilo poželjno da se koristi statično dodijeljeni vanjski port, primjerice port 30443. U datoteku je potrebno dodati ```nodePort: 30443```:
+
+```
+  ...
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: kong-proxy-tls
+    nodePort: 30443 # Nadodana stavka
+    port: 443
+    protocol: TCP
+    targetPort: 8443
+  selector:
+  ...
+```
+
+Uređenu konfiguraciju potrebno je postaviti naredbom:
+
+```
+sudo kubectl -n kubernetes-dashboard apply -f kubernetes-dashboard-kong-proxy.yaml
+```
+
+Kako bi dopustiti [pristup Kubernetes resursima](https://github.com/kubernetes/dashboard/blob/master/docs/user/access-control/README.md), potrebno je [stvoriti objekt korisnika](https://github.com/kubernetes/dashboard/blob/master/docs/user/access-control/creating-sample-user.md) i dohvatiti token. Za stvaranje objekta korisnika potrebno je napisati YAML datoteku (npr. imena *kubernetes-service-account.yaml*) sljedećeg sadržaja:
+
+```
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin-user
+  namespace: kubernetes-dashboard
+```
+
+Potrebno je proslijediti konfiguraciju uz pomoć naredbe ```sudo kubectl apply -f kubernetes-service-account.yaml```. Zatim je potrebno napraviti objekt tipa [*ClusterRoleBinding*](https://kubernetes.io/docs/reference/access-authn-authz/rbac/) koji dopušta operacije korisniku nad grozdom. Datoteku (npr. imena *kubernetes-cluster-role-binding.yaml*) je potrebno popuniti sljedećim sadržajem:
+
+```
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-user
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: admin-user
+  namespace: kubernetes-dashboard
+```
+
+Nakon prosljeđivanje ove datoteke naredbom ```sudo kubectl apply -f kubernetes-cluster-role-binding.yaml``` potrebno je napraviti dugovječni token objekt koji će se koristiti za prijavu na web. Dakle, potrebno je stvoriti datoteku (npr. imena *kubernetes-long-lived-bearer-token.yaml*) i popunit ju sljedećim sadržajem te je proslijediti:
+
+```
+apiVersion: v1
+kind: Secret
+metadata:
+  name: admin-user
+  namespace: kubernetes-dashboard
+  annotations:
+    kubernetes.io/service-account.name: "admin-user"
+type: kubernetes.io/service-account-token
+```
+
+Datoteka mora biti proslijeđena naredbom ```sudo kubectl apply -f kubernetes-long-lived-bearer-token.yaml```. Token se može dobiti naredbom ```kubectl get secret admin-user -n kubernetes-dashboard -o jsonpath={".data.token"} | base64 -d```. Poželjno je da se napravi skripta (npr. imena get-bearer-token.sh) sadržaja:
+
+```
+#!/bin/bash
+
+kubectl get secret admin-user -n kubernetes-dashboard -o jsonpath={".data.token"} | base64 -d
+echo
+```
+
+Također, potrebno je promijeniti ovlasti datoteke naredbom ```chmod u+x get-bearer-token.sh```.

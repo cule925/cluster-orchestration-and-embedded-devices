@@ -1,6 +1,6 @@
 # Primjer Kubernetes YAML konfiguracijskih datoteka
 
-Tri su YAML konfiguracijske datoteke:
+Tri su YAML konfiguracijske datoteke i jedan direktorij:
 
 - ```kubernetes-daemonset-v1.yaml```
 	- stvara, ažurira ili briše objekt tipa DaemonSet koji na svakom čvoru stvara jedan Kubernetes kontejner omotavajući Docker kontejner ```cule925/client-server-arm64:v1```
@@ -12,15 +12,18 @@ Tri su YAML konfiguracijske datoteke:
 - ```kubernetes-service-nodeport.yaml```
 	- stvara, ažurira ili briše objekt tipa Service podtipa NodePort koji svaki Kubernetes kontejner u ```kubernetes-daemonset-v1.yaml``` i ```kubernetes-daemonset-v2.yaml``` konfiguraciji izlaže vanjskom svijetu
 
+- ```dashboard-config```
+	- konfiguracija za Kubernetes dashboard web grafičko sučelje
+
 ## Prijenos na upravljački čvor
 
-Datoteke se prenose na upravljački čvor pomoću SSH protokola naredbom:
+Datoteke i direktorij se prenose na upravljački čvor pomoću SSH protokola naredbom:
 
 ```
-scp kubernetes-daemonset-v1.yaml kubernetes-daemonset-v2.yaml kubernetes-service-nodeport.yaml user@[IP adresa upravljačkog čvora]:~/
+scp -r kubernetes-* dashboard-config/ user@192.168.7.24:~/
 ```
 
-## Prosljeđivanje konfiguracije
+## Prosljeđivanje konfiguracije za aplikaciju
 
 Za početak je potrebno ulogirati se na upravljački čvor pomoću SSH protokola naredbom:
 
@@ -47,3 +50,4 @@ k3s kubectl apply -f kubernetes-daemonset-v2.yaml
 ```
 
 Brisanje konfiguracija odnosno brisanje DaemonSet objekta može se napraviti naredbom ```k3s kubectl delete -f kubernetes-daemonset-v1.yaml``` ili ```k3s kubectl delete -f kubernetes-daemonset-v2.yaml``` jer se obe konfiguracije referiraju na istu instancu objekta. Objekt tipa Service se može obrisati naredbom ```k3s kubectl delete -f kubernetes-service-nodeport.yaml```.
+
