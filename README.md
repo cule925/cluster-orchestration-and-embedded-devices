@@ -199,7 +199,7 @@ curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 Zatim je potrebno postaviti [*Deployment*](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/) za grafičko sučelje uz pomoć alata *kubectl* na upravljačkom sloju. Ovo će preuzeti Docker kontejnere potrebne za rad grafičkog web sučelja te pokrenuti Kubernetes kontejnere i servise na upravljačkom sloju. Kako koristimo K3s umjesto K8s (izvorna Kubernetes distribucija), potrebno je navesti gdje se nalazi konfiguracijska datoteka koja omogućuje pristup Kubernetes grozda. U slučaju K3s distribucije, njezina [konfiguracijska datoteka](https://docs.k3s.io/cluster-access) se nalazi na lokaciji ```/etc/rancher/k3s/k3s.yaml```. Dakle, potrebno je izvesti naredbe:
 
 ```
-helm --kubeconfig /etc/rancher/k3s/k3s.yaml repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
+sudo helm --kubeconfig /etc/rancher/k3s/k3s.yaml repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
 sudo helm --kubeconfig /etc/rancher/k3s/k3s.yaml upgrade --install kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard --create-namespace --namespace kubernetes-dashboard
 ```
 
